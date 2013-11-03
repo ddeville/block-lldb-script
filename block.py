@@ -1,5 +1,10 @@
 #!/usr/bin/python
 
+'''
+Add this to ~/.lldbinit
+command script import ~/.lldb/block.py
+'''
+
 import lldb
 import commands
 import optparse
@@ -32,10 +37,10 @@ def block_disass_command(debugger, command, result, dict):
 	frame = thread.GetSelectedFrame()
 	
 	# If command is the variable name in the current frame
-	#address = frame.FindVariable(command).GetValueAsSigned()
+	address = frame.FindVariable(command).GetValueAsSigned()
 	
 	# If command is an address
-	address = int(command, 0)
+	#address = int(command, 0)
 	
 	print_block_signature(debugger, process, address)
 	disass_block_invoke_function(debugger, process, address, 35)
