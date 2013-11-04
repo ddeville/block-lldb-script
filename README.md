@@ -1,4 +1,4 @@
-### A Python script for lldb to disassemble an Objective-C block
+### A Python script to disassemble an Objective-C block in lldb
 =================
 
 A Python script for `lldb` that prints an Objective-C block signature and disassemble its invoke function.
