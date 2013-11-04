@@ -18,10 +18,11 @@ def create_command_arguments(command):
 	return shlex.split(command)
 
 def create_block_disass_parser():
-	usage = "usage: %prog arg1 [--disass -d] [--signature -s]"
+	usage = "usage: %prog arg1 [--disass -d] [--number-instructions -n] [--signature -s]"
 	parser = optparse.OptionParser(prog='block_disass', usage=usage)
-	parser.add_option('-d', '--disass', action='store_true', default=False)
-	parser.add_option('-s', '--signature', action='store_true', default=False)
+	parser.add_option('-d', '--disass', action='store_true', dest='disass', default=False)
+	parser.add_option('-n', '--number-instructions', dest='numberinstructions', default=20)
+	parser.add_option('-s', '--signature', action='store_true', dest='signature', default=False)
 	return parser
 
 def block_disass_command(debugger, command, result, dict):
@@ -38,6 +39,7 @@ def block_disass_command(debugger, command, result, dict):
 		return
 	
 	variable_arg = args[0]
+	number_instructions = options.numberinstructions
 	should_signature = options.signature
 	should_disass = options.disass or (not options.signature and not options.disass)
 	
@@ -59,7 +61,7 @@ def block_disass_command(debugger, command, result, dict):
 	if should_signature:
 		print_block_signature(debugger, process, address)
 	if should_disass:
-		disass_block_invoke_function(debugger, process, address, 35)
+		disass_block_invoke_function(debugger, process, address, number_instructions)
 
 '''
 struct Block_literal_1 {
