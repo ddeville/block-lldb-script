@@ -7,8 +7,8 @@ command script import ~/.lldb/block.py
 
 import lldb
 import commands
-import optparse
 import shlex
+import optparse
 
 def __lldb_init_module (debugger, dict):
 	debugger.HandleCommand('command script add -f block.block_disass_command block_disass')
@@ -30,20 +30,52 @@ struct Block_literal_1 {
 };
 '''
 
+def create_command_arguments(command):
+	return shlex.split(command)
+
+def create_block_disass_parser():
+	usage = "usage: %prog arg1 [--disass -d] [--signature -s]"
+	parser = optparse.OptionParser(prog='block_disass', usage=usage)
+	parser.add_option('-d', '--disass', action='store_true', default=False)
+	parser.add_option('-s', '--signature', action='store_true', default=False)
+	return parser
+
 def block_disass_command(debugger, command, result, dict):
+	cmd_args = create_command_arguments(command)
+	parser = create_block_disass_parser()
+	
+	try:
+		(options, args) = parser.parse_args(cmd_args)
+	except:
+		return
+	
+	if len(args) == 0:
+		print "You need to specify the name of a variable or an address"
+		return
+	
+	variable_arg = args[0]
+	should_signature = options.signature
+	should_disass = options.disass or (not options.signature and not options.disass)
+	
 	target = debugger.GetSelectedTarget()
 	process = target.GetProcess()
 	thread = process.GetSelectedThread()
 	frame = thread.GetSelectedFrame()
+		
+	variable = frame.FindVariable(variable_arg)
+	if variable.IsValid():
+		address = variable.GetValueAsSigned()
+	else:
+		try:
+			address = int(variable_arg, 0)
+		except:
+			print "The argument is not a valid address or variable in the frame"
+			return
 	
-	# If command is the variable name in the current frame
-	address = frame.FindVariable(command).GetValueAsSigned()
-	
-	# If command is an address
-	#address = int(command, 0)
-	
-	print_block_signature(debugger, process, address)
-	disass_block_invoke_function(debugger, process, address, 35)
+	if should_signature:
+		print_block_signature(debugger, process, address)
+	if should_disass:
+		disass_block_invoke_function(debugger, process, address, 35)
 	
 def print_block_signature(debugger, process, block_address):
 	flags_address = block_address + 8	# The `flags` integer is 8 bytes in the struct
