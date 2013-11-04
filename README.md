@@ -6,10 +6,10 @@ A Python script for `lldb` that prints an Objective-C block signature and disass
 In order to use the script in an embedded python interpreter using lldb you can import it by running the command
 
 ```
-command script import /path/to/block_disass.py`
+command script import /path/to/block.py`
 ```
 
-Alternatively, you can add `command script import /path/to/block_disass.py` to your `~/.lldbinit`.
+Alternatively, you can add `command script import /path/to/block.py` to your `~/.lldbinit`.
 
 Usage:
 
