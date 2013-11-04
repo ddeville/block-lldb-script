@@ -14,22 +14,6 @@ def __lldb_init_module (debugger, dict):
 	debugger.HandleCommand('command script add -f block.block_disass_command block_disass')
 	print 'The "block_disass" command has been installed'
 
-'''
-struct Block_literal_1 {
-    void *isa;
-    int flags;
-    int reserved; 
-    void (*invoke)(void *, ...);
-    struct Block_descriptor_1 {
-        unsigned long int reserved;
-        unsigned long int size;
-        void (*copy_helper)(void *dst, void *src);
-        void (*dispose_helper)(void *src);
-        const char *signature;
-    } *descriptor;
-};
-'''
-
 def create_command_arguments(command):
 	return shlex.split(command)
 
@@ -76,7 +60,23 @@ def block_disass_command(debugger, command, result, dict):
 		print_block_signature(debugger, process, address)
 	if should_disass:
 		disass_block_invoke_function(debugger, process, address, 35)
-	
+
+'''
+struct Block_literal_1 {
+    void *isa;
+    int flags;
+    int reserved; 
+    void (*invoke)(void *, ...);
+    struct Block_descriptor_1 {
+        unsigned long int reserved;
+        unsigned long int size;
+        void (*copy_helper)(void *dst, void *src);
+        void (*dispose_helper)(void *src);
+        const char *signature;
+    } *descriptor;
+};
+'''
+
 def print_block_signature(debugger, process, block_address):
 	flags_address = block_address + 8	# The `flags` integer is 8 bytes in the struct
 	
