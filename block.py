@@ -59,9 +59,9 @@ def block_disass_command(debugger, command, result, dict):
 			return
 	
 	if should_signature:
-		print_block_signature(debugger, process, address)
+		print_block_signature(debugger, target, process, address)
 	if should_disass:
-		disass_block_invoke_function(debugger, process, address, number_instructions)
+		disass_block_invoke_function(debugger, target, process, address, number_instructions)
 
 '''
 struct Block_literal_1 {
@@ -79,8 +79,10 @@ struct Block_literal_1 {
 };
 '''
 
-def print_block_signature(debugger, process, block_address):
-	flags_address = block_address + 8	# The `flags` integer is 8 bytes in the struct
+def print_block_signature(debugger, target, process, block_address):
+	pointer_size = 8 if arch_for_target_is_64bit(target) else 4
+	
+	flags_address = block_address + pointer_size	# The `flags` integer is after a pointer in the struct
 	
 	flags_error = lldb.SBError()
 	flags = process.ReadUnsignedFromMemory(flags_address, 4, flags_error)
@@ -95,7 +97,7 @@ def print_block_signature(debugger, process, block_address):
 		print "The block does not have a signature"
 		return
 	
-	block_descriptor_address = block_address + 24	# The block descriptor struct pointer is 24 bytes in the struct
+	block_descriptor_address = block_address + 2 * 4 + 2 * pointer_size	# The block descriptor struct pointer is after 2 pointers and 2 int in the struct
 	
 	block_descriptor_error = lldb.SBError()
 	block_descriptor = process.ReadPointerFromMemory(block_descriptor_address, block_descriptor_error)
@@ -103,9 +105,9 @@ def print_block_signature(debugger, process, block_address):
 		print "Could not read the block descriptor struct"
 		return
 	
-	signature_address = block_descriptor + 16	# The signature is 16 bytes in the descriptor struct
+	signature_address = block_descriptor + 2 * pointer_size	# The signature is after 2 unsigned int in the descriptor struct
 	if block_has_copy_dispose_helpers:
-		signature_address += 16	# If there are a copy and dispose function pointers the signature is 32 bytes in the descriptor struct
+		signature_address += 2 * pointer_size	# If there are a copy and dispose function pointers the signature
 	
 	signature_pointer_error = lldb.SBError()
 	signature_pointer = process.ReadPointerFromMemory(signature_address, signature_pointer_error)
@@ -121,8 +123,10 @@ def print_block_signature(debugger, process, block_address):
 	method_signature_cmd = 'po [NSMethodSignature signatureWithObjCTypes:"' + escaped_signature + '"]'
 	debugger.HandleCommand(method_signature_cmd)
 
-def disass_block_invoke_function(debugger, process, block_address, instruction_count):
-	invoke_function_address = block_address + 16	# The `invoke` function is 16 bytes in the struct
+def disass_block_invoke_function(debugger, target, process, block_address, instruction_count):
+	pointer_size = 8 if arch_for_target_is_64bit(target) else 4
+	
+	invoke_function_address = block_address + pointer_size + 2 * 4	# The `invoke` function is after one pointer and 2 int in the struct
 	
 	invoke_function_error = lldb.SBError()
 	invoke_function_pointer = process.ReadPointerFromMemory(invoke_function_address, invoke_function_error)
@@ -132,3 +136,10 @@ def disass_block_invoke_function(debugger, process, block_address, instruction_c
 	
 	disass_cmd = "disassemble --start-address " + str(invoke_function_pointer) + " -c " + str(instruction_count)
 	debugger.HandleCommand(disass_cmd)
+
+arch_64 = ['armv64', 'x86_64']
+arch_32 = ['i386', 'armv7', 'armv7s']
+
+def arch_for_target_is_64bit(target):
+	arch = target.GetTriple().split('-')[0]
+	return arch in arch_64
